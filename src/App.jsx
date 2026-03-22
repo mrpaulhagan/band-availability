@@ -36,24 +36,6 @@ function fmt(fri, sun) {
   return `${fri.getDate()} ${MS[fri.getMonth()]}–${sun.getDate()} ${MS[sun.getMonth()]}`;
 }
 
-function seedData() {
-  const d = {};
-  MEMBERS.forEach(m => {
-    d[m.id] = {};
-    let cur = new Date(YEAR, 0, 1);
-    while (cur.getDay() !== 5) cur.setDate(cur.getDate() + 1);
-    while (cur.getFullYear() === YEAR) {
-      [0, 1, 2].forEach(o => {
-        const dd = new Date(cur); dd.setDate(cur.getDate() + o);
-        const r = Math.random();
-        d[m.id][toKey(dd)] = r > 0.4 ? "yes" : r > 0.15 ? "no" : "none";
-      });
-      cur.setDate(cur.getDate() + 7);
-    }
-  });
-  return d;
-}
-
 const DAYS = ["Fri", "Sat", "Sun"];
 
 const styles = {
@@ -142,7 +124,11 @@ function AvButton({ av, onClick }) {
 const MONTHS = getWeekends();
 
 export default function App() {
-  const [data, setData] = useState(seedData);
+  const [data, setData] = useState(() => {
+  const d = {};
+  MEMBERS.forEach(m => { d[m.id] = {}; });
+  return d;
+});
 
   function toggle(memberId, dateKey) {
     setData(prev => {
