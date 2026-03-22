@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const MEMBERS = [
   { id: "paul",  name: "Paul"  },
@@ -125,20 +125,43 @@ const MONTHS = getWeekends();
 
 export default function App() {
   const [data, setData] = useState(() => {
-  const d = {};
-  MEMBERS.forEach(m => { d[m.id] = {}; });
-  return d;
-});
+    const d = {};
+    MEMBERS.forEach(m => { d[m.id] = {}; });
+    return d;
+  });
+  const [loaded, setLoaded] = useState(false);
 
-  function toggle(memberId, dateKey) {
-    setData(prev => {
-      const cur = prev[memberId][dateKey] || "none";
-      return {
-        ...prev,
-        [memberId]: { ...prev[memberId], [dateKey]: nextAv(cur) },
-      };
+  useEffect(() => {
+    fetch('https://band.paulhagan.co.uk/api/availability')
+      .then(r => r.json())
+      .then(remote => {
+        const d = {};
+        MEMBERS.forEach(m => { d[m.id] = {}; });
+        Object.entries(remote).forEach(([member, dates]) => {
+          Object.entries(dates).forEach(([date, status]) => {
+            if (d[member]) d[member][date] = status;
+          });
+        });
+        setData(d);
+        setLoaded(true);
+      });
+  }, []);
+
+function toggle(memberId, dateKey) {
+  setData(prev => {
+    const cur = prev[memberId][dateKey] || "none";
+    const next = nextAv(cur);
+    fetch('https://band.paulhagan.co.uk/api/availability', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ member: memberId, date: dateKey, status: next === 'none' ? null : next }),
     });
-  }
+    return {
+      ...prev,
+      [memberId]: { ...prev[memberId], [dateKey]: next },
+    };
+  });
+}
 
   return (
     <div style={styles.app}>
